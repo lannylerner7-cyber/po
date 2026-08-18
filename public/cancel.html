@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Payment canceled · POS</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root { --counter:#e8eaef; --ink:#14161b; --muted:#6b7280; --accent:#2e6be6; --bad:#c63a3a; }
+    * { box-sizing: border-box; margin: 0; }
+    body {
+      min-height: 100vh; display: grid; place-items: center;
+      background: var(--counter) url("/backgrounds/soft-aurora.svg") center / cover no-repeat;
+      color: var(--ink);
+      font-family: "Space Grotesk", system-ui, sans-serif;
+      padding: 2rem 1rem; text-align: center;
+    }
+    .card {
+      width: min(400px, 100%); background: #fafbfc; border-radius: 20px;
+      padding: 2.4rem 2rem 2.2rem;
+      box-shadow: 0 24px 50px -22px rgba(20,22,27,.35);
+    }
+    h1 { font-size: 1.9rem; font-weight: 700; margin-bottom: 0.4rem; }
+    p { color: var(--muted); line-height: 1.55; }
+    .posid {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      margin-top: 1.2rem;
+    }
+    .posid[hidden] { display: none; }
+    .posid code {
+      font: 500 1rem "IBM Plex Mono", monospace;
+      background: #eef0f3; border: 1px solid #e0e3e9;
+      border-radius: 8px; padding: 0.4rem 0.7rem; letter-spacing: 0.04em;
+    }
+    .hint { margin-top: 0.6rem; font-size: 0.82rem; }
+    a.back {
+      display: inline-block; margin-top: 1.5rem; padding: 0.85rem 1.8rem;
+      background: var(--accent); color: #fff; text-decoration: none;
+      font-weight: 700; border-radius: 12px;
+    }
+    a.back:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1 id="headline">Payment canceled</h1>
+    <p id="detail">No charge was made. The sale is still open if you want to try again.</p>
+    <div class="posid" id="posid" hidden>
+      <code id="pid-value"></code>
+    </div>
+    <p class="hint" id="pid-hint" hidden>This POS ID records the attempt — you can look it up in Payment review.</p>
+    <a class="back" href="/">Back to terminal</a>
+  </main>
+
+  <script>
+    const q = new URLSearchParams(location.search);
+    const pid = (q.get('pid') || '').toUpperCase();
+    if (/^RE-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(pid)) {
+      document.getElementById('pid-value').textContent = pid;
+      document.getElementById('posid').hidden = false;
+      document.getElementById('pid-hint').hidden = false;
+    }
+    if (q.get('st') === 'expired') {
+      document.getElementById('headline').textContent = 'Checkout expired';
+      document.getElementById('detail').textContent =
+        'The payment page timed out before it was completed. No charge was made.';
+    }
+
+    // Decline sound: two short low buzzes, the classic POS "declined" feel.
+    function playDeclined() {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return false;
+      const ctx = new Ctx();
+      if (ctx.state === 'suspended') { ctx.close(); return false; }
+      [246.94, 196.0].forEach((f, i) => {
+        const t = ctx.currentTime + i * 0.25;
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = 'sawtooth'; o.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(0.07, t + 0.012);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.19);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(t); o.stop(t + 0.2);
+      });
+      return true;
+    }
+    if (!playDeclined()) {
+      const once = () => { playDeclined(); removeEventListener('pointerdown', once); removeEventListener('keydown', once); };
+      addEventListener('pointerdown', once); addEventListener('keydown', once);
+    }
+  </script>
+</body>
+</html>

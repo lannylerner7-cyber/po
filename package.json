@@ -1,0 +1,23 @@
+{
+  "name": "retaileval-terminal",
+  "version": "1.0.0",
+  "private": true,
+  "description": "RetailEval digital POS terminal powered by Stripe-hosted Checkout",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "mock:d1": "node tools/mock-d1.js",
+    "mock:smtp": "node tools/mock-smtp.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "helmet": "^8.3.0",
+    "nodemailer": "^9.0.5",
+    "smtp-server": "^3.19.3",
+    "stripe": "^17.0.0"
+  }
+}

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <radialGradient id="lift" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="1000" fill="#e8eaef"/>
+  <g fill="none" stroke-width="1.6">
+    <path d="M-100 940 C 320 830, 560 860, 860 680 S 1360 430, 1750 330" stroke="#d6dae2"/>
+    <path d="M-100 880 C 330 770, 570 800, 870 620 S 1370 370, 1750 270" stroke="#d6dae2"/>
+    <path d="M-100 820 C 340 710, 580 740, 880 560 S 1380 310, 1750 210" stroke="#2e6be6" stroke-opacity="0.22"/>
+    <path d="M-100 760 C 350 650, 590 680, 890 500 S 1390 250, 1750 150" stroke="#d6dae2"/>
+    <path d="M-100 700 C 360 590, 600 620, 900 440 S 1400 190, 1750 90" stroke="#c9cdd7"/>
+    <path d="M-100 640 C 370 530, 610 560, 910 380 S 1410 130, 1750 30" stroke="#2e6be6" stroke-opacity="0.14"/>
+    <path d="M-100 580 C 380 470, 620 500, 920 320 S 1420 70, 1750 -30" stroke="#d6dae2"/>
+  </g>
+  <circle cx="800" cy="450" r="560" fill="url(#lift)"/>
+</svg>

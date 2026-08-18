@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>POS Terminal</title>
+  <meta name="description" content="POS point-of-sale — enter an amount and pay securely via Stripe." />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --counter: #e8eaef;
+      --body: #23262d;
+      --body-edge: #3a404a;
+      --screen: #fafbfc;
+      --ink: #14161b;
+      --muted: #6b7280;
+      --key: #2c3038;
+      --key-edge: #363b45;
+      --key-hover: #333842;
+      --accent: #2e6be6;
+      --accent-press: #2458c2;
+      --danger: #c63a3a;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      /* Swap the file to change mood:
+         soft-aurora.svg · ledger-grid.svg · flow-lines.svg · payment-rails.svg */
+      background: var(--counter) url("/backgrounds/soft-aurora.svg") center / cover no-repeat;
+      color: var(--ink);
+      font-family: "Space Grotesk", system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      padding: 2rem 1rem;
+    }
+    main { width: min(400px, 100%); }
+
+    /* ---------- device ---------- */
+    .terminal {
+      background: var(--body);
+      border: 1px solid var(--body-edge);
+      border-radius: 28px;
+      padding: 16px 16px 22px;
+      box-shadow:
+        0 30px 60px -24px rgba(20, 22, 27, 0.5),
+        0 6px 16px -8px rgba(20, 22, 27, 0.35);
+    }
+    .top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px 8px 10px;
+    }
+    .brand {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.28em;
+      color: #9aa1ac;
+    }
+    .contactless { color: #9aa1ac; }
+    .top-right { display: flex; align-items: center; gap: 12px; }
+    .icon-btn {
+      display: grid;
+      place-items: center;
+      border: 0;
+      background: none;
+      color: #9aa1ac;
+      cursor: pointer;
+      padding: 2px;
+      border-radius: 8px;
+    }
+    .icon-btn:hover { color: #c6ccd6; }
+    .icon-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .icon-btn .slash { opacity: 0; transition: opacity 0.12s ease; }
+    .icon-btn[aria-pressed="false"] .slash { opacity: 1; }
+
+    /* ---------- screen ---------- */
+    .screen {
+      background: var(--screen);
+      border-radius: 16px;
+      padding: 16px 18px 18px;
+    }
+    .screen-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .screen-head span {
+      font-size: 0.78rem;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .clear-btn {
+      border: 0;
+      background: none;
+      font: 500 0.85rem "Space Grotesk", sans-serif;
+      color: var(--accent);
+      cursor: pointer;
+      padding: 2px 4px;
+      border-radius: 6px;
+    }
+    .clear-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    .amount-row {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      border-bottom: 2px solid #e3e6eb;
+      padding-bottom: 6px;
+    }
+    .amount-row:focus-within { border-bottom-color: var(--accent); }
+    .cur {
+      font: 600 1.5rem "IBM Plex Mono", monospace;
+      color: var(--muted);
+    }
+    #amount {
+      flex: 1;
+      min-width: 0;
+      border: 0;
+      outline: none;
+      background: none;
+      text-align: right;
+      font: 600 clamp(2.1rem, 9vw, 2.8rem) / 1.2 "IBM Plex Mono", monospace;
+      color: var(--ink);
+      caret-color: var(--accent);
+    }
+    #amount::placeholder { color: #c4c9d2; }
+
+    #note {
+      width: 100%;
+      border: 0;
+      outline: none;
+      background: none;
+      border-bottom: 1px solid #e3e6eb;
+      margin-top: 14px;
+      padding: 6px 2px;
+      font: 400 0.95rem "Space Grotesk", sans-serif;
+      color: var(--ink);
+    }
+    #note:focus { border-bottom-color: var(--accent); }
+    #note::placeholder { color: #a7adb8; }
+
+    .error {
+      margin-top: 10px;
+      font-size: 0.85rem;
+      color: var(--danger);
+    }
+
+    .charge {
+      width: 100%;
+      margin-top: 16px;
+      border: 0;
+      border-radius: 12px;
+      padding: 1rem;
+      font: 700 1.05rem "Space Grotesk", sans-serif;
+      color: #fff;
+      background: var(--accent);
+      cursor: pointer;
+      transition: background 0.15s ease, transform 0.15s ease;
+    }
+    .charge:hover:enabled { background: var(--accent-press); }
+    .charge:active:enabled { transform: translateY(1px); }
+    .charge:disabled { opacity: 0.4; cursor: not-allowed; }
+    .charge:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+
+    /* ---------- keypad ---------- */
+    .keypad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .keypad button {
+      border: 1px solid var(--key-edge);
+      border-radius: 12px;
+      background: var(--key);
+      color: #e7e9ee;
+      font: 500 1.25rem "IBM Plex Mono", monospace;
+      padding: 0.85rem 0;
+      cursor: pointer;
+      transition: background 0.12s ease, transform 0.12s ease;
+    }
+    .keypad button:hover { background: var(--key-hover); }
+    .keypad button:active { transform: translateY(1px); }
+    .keypad button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    /* ---------- under the device ---------- */
+    .methods, .powered {
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+    .methods { margin-top: 18px; }
+    .powered { margin-top: 4px; }
+
+    /* ---------- payment review ---------- */
+    .review-fab {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 40;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--body-edge);
+      border-radius: 999px;
+      background: var(--body);
+      color: #e7e9ee;
+      font: 700 0.9rem "Space Grotesk", sans-serif;
+      padding: 0.7rem 1.15rem;
+      cursor: pointer;
+      box-shadow: 0 12px 28px -12px rgba(20, 22, 27, 0.55);
+    }
+    .review-fab:hover { background: #2c3038; }
+    .review-fab:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+    .review-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      background: rgba(20, 22, 27, 0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .review-overlay[data-open] { display: flex; }
+    .review-card {
+      width: min(380px, 100%);
+      background: var(--screen);
+      border-radius: 16px;
+      padding: 1.2rem 1.3rem 1.3rem;
+    }
+    .review-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.8rem; }
+    .review-head h2 { font-size: 1.05rem; font-weight: 700; }
+    .review-close { border: 0; background: none; font-size: 1.3rem; line-height: 1; color: var(--muted); cursor: pointer; padding: 4px; border-radius: 6px; }
+    .review-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .review-fields { display: flex; flex-direction: column; gap: 8px; }
+    .review-fields input {
+      width: 100%;
+      border: 1px solid #d7dbe2;
+      border-radius: 10px;
+      padding: 0.65rem 0.75rem;
+      font: 400 0.95rem "Space Grotesk", sans-serif;
+      color: var(--ink);
+    }
+    .review-fields input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+    #review-id { font: 500 0.95rem "IBM Plex Mono", monospace; text-transform: uppercase; }
+    .review-privacy { margin-top: 8px; font-size: 0.76rem; color: var(--muted); line-height: 1.45; }
+    #review-check {
+      width: 100%;
+      margin-top: 10px;
+      border: 0;
+      border-radius: 10px;
+      background: var(--accent);
+      color: #fff;
+      font: 700 0.95rem "Space Grotesk", sans-serif;
+      padding: 0.75rem;
+      cursor: pointer;
+    }
+    #review-check:hover:enabled { background: var(--accent-press); }
+    #review-check:disabled { opacity: 0.5; cursor: wait; }
+    #review-check:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+    .review-result { margin-top: 1rem; font-size: 0.92rem; }
+    .review-result[hidden] { display: none; }
+    .review-pill {
+      display: inline-block;
+      padding: 0.2rem 0.7rem;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      margin-bottom: 0.6rem;
+    }
+    .review-pill.good { background: #e2f4ec; color: #1a9a62; }
+    .review-pill.info { background: #e6eefc; color: var(--accent); }
+    .review-pill.neutral { background: #eef0f3; color: var(--muted); }
+    .review-pill.bad { background: #fbeaea; color: var(--danger); }
+    .review-line { display: flex; justify-content: space-between; gap: 12px; padding: 0.3rem 0; border-bottom: 1px solid #eef0f3; }
+    .review-line:last-child { border-bottom: 0; }
+    .review-line .k { color: var(--muted); }
+    .review-line .v { text-align: right; overflow-wrap: anywhere; }
+    .review-error { margin-top: 0.8rem; font-size: 0.88rem; color: var(--danger); }
+    .review-error[hidden] { display: none; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .charge, .keypad button { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="terminal" aria-label="Payment terminal">
+      <div class="top">
+        <span class="brand">POS</span>
+        <div class="top-right">
+          <button type="button" class="icon-btn" id="sound" aria-pressed="true" aria-label="Keypad sounds on or off">
+            <svg width="20" height="16" viewBox="0 0 20 16" aria-hidden="true">
+              <path d="M2 5.5 h3 L9 2 v12 L5 10.5 H2 z" fill="currentColor" />
+              <g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+                <path d="M12 5.2 a4.2 4.2 0 0 1 0 5.6" />
+                <path d="M14.6 3.2 a7.6 7.6 0 0 1 0 9.6" />
+              </g>
+              <line class="slash" x1="1.5" y1="14.5" x2="18.5" y2="1.5"
+                    stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+            </svg>
+          </button>
+          <svg class="contactless" width="22" height="18" viewBox="0 0 22 18" aria-hidden="true">
+          <g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <path d="M4 6.2 a6.5 6.5 0 0 1 0 5.6" />
+            <path d="M8.4 4 a10.5 10.5 0 0 1 0 10" />
+            <path d="M12.8 1.8 a14.5 14.5 0 0 1 0 14.4" />
+          </g>
+        </svg>
+        </div>
+      </div>
+
+      <form class="screen" id="pos" action="/create-checkout-session" method="POST">
+        <div class="screen-head">
+          <span>Withdraw</span>
+          <button type="button" class="clear-btn" id="clear">Clear</button>
+        </div>
+
+        <div class="amount-row">
+          <span class="cur" aria-hidden="true">$</span>
+          <input id="amount" name="amount" inputmode="decimal" autocomplete="off"
+                 placeholder="0.00" aria-label="Amount in US dollars" />
+        </div>
+
+        <input id="note" name="note" maxlength="120" autocomplete="off"
+               placeholder="Note (optional)" aria-label="Note for this sale" />
+
+        <p class="error" id="error" role="alert" hidden></p>
+
+        <button class="charge" id="charge" type="submit" disabled>
+          <span id="charge-label">Charge</span>
+        </button>
+      </form>
+
+      <div class="keypad" role="group" aria-label="Number pad">
+        <button type="button" data-k="1">1</button>
+        <button type="button" data-k="2">2</button>
+        <button type="button" data-k="3">3</button>
+        <button type="button" data-k="4">4</button>
+        <button type="button" data-k="5">5</button>
+        <button type="button" data-k="6">6</button>
+        <button type="button" data-k="7">7</button>
+        <button type="button" data-k="8">8</button>
+        <button type="button" data-k="9">9</button>
+        <button type="button" data-k=".">.</button>
+        <button type="button" data-k="0">0</button>
+        <button type="button" data-k="back" aria-label="Delete last digit">&#9003;</button>
+      </div>
+    </section>
+
+    <p class="methods">Accepts cards &middot; Apple&nbsp;Pay &middot; Google&nbsp;Pay &middot; Link &middot; Klarna &middot; Amazon&nbsp;Pay &middot; US bank debit</p>
+    <p class="powered">Secure checkout by Stripe</p>
+  </main>
+
+  <button type="button" class="review-fab" id="review-open">
+    <svg width="15" height="15" viewBox="0 0 15 15" aria-hidden="true">
+      <circle cx="6.2" cy="6.2" r="4.6" fill="none" stroke="currentColor" stroke-width="1.8"/>
+      <line x1="9.8" y1="9.8" x2="13.6" y2="13.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+    </svg>
+    Payment review
+  </button>
+
+  <div class="review-overlay" id="review-overlay" role="dialog" aria-modal="true" aria-labelledby="review-title">
+    <div class="review-card">
+      <div class="review-head">
+        <h2 id="review-title">Payment review</h2>
+        <button type="button" class="review-close" id="review-close" aria-label="Close">&times;</button>
+      </div>
+      <div class="review-fields">
+        <input id="review-id" autocomplete="off" spellcheck="false"
+               placeholder="RE-XXXX-XXXX" aria-label="POS payment ID" />
+        <input id="review-name" autocomplete="name"
+               placeholder="Your name" aria-label="Your name" />
+        <input id="review-email" type="email" autocomplete="email"
+               placeholder="Your email" aria-label="Your email" />
+      </div>
+      <p class="review-privacy">Please add your name and email to view this payment — they're shared with RetailEval so we can reach you about it if needed.</p>
+      <button type="button" id="review-check">Check payment</button>
+      <p class="review-error" id="review-error" hidden></p>
+      <div class="review-result" id="review-result" hidden>
+        <span class="review-pill" id="review-pill"></span>
+        <div class="review-line"><span class="k">Amount</span><span class="v" id="review-amount"></span></div>
+        <div class="review-line"><span class="k">Created</span><span class="v" id="review-created"></span></div>
+        <div class="review-line"><span class="k">Last update</span><span class="v" id="review-updated"></span></div>
+        <div class="review-line"><span class="k">Note</span><span class="v" id="review-note"></span></div>
+      </div>
+    </div>
+  </div>
+  <script src="/app.js"></script>
+</body>
+</html>

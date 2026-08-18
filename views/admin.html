@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin · RetailEval Terminal</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --counter:#e8eaef; --body:#23262d; --screen:#fafbfc; --ink:#14161b;
+      --muted:#6b7280; --line:#e3e6eb; --accent:#2e6be6; --accent-press:#2458c2;
+      --ok:#1a9a62; --warn:#b06f0c; --bad:#c63a3a;
+    }
+    * { box-sizing: border-box; margin: 0; }
+    body { background: var(--counter); color: var(--ink); font-family: "Space Grotesk", system-ui, sans-serif; }
+    header {
+      background: var(--body); color: #e7e9ee; padding: 0.9rem 1.4rem;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    header .brand { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.24em; }
+    header .actions { display: flex; gap: 8px; }
+    header button {
+      border: 1px solid #3a404a; background: #2c3038; color: #e7e9ee;
+      font: 500 0.85rem "Space Grotesk", sans-serif; padding: 0.45rem 0.9rem;
+      border-radius: 9px; cursor: pointer;
+    }
+    header button:hover { background: #333842; }
+    main { max-width: 980px; margin: 0 auto; padding: 1.2rem 1rem 3rem; }
+    nav.tabs { display: flex; gap: 8px; margin-bottom: 1.2rem; flex-wrap: wrap; }
+    nav.tabs button {
+      border: 1px solid var(--line); background: var(--screen); color: var(--ink);
+      font: 500 0.9rem "Space Grotesk", sans-serif; padding: 0.5rem 1rem;
+      border-radius: 999px; cursor: pointer;
+    }
+    nav.tabs button[aria-selected="true"] { background: var(--body); color: #e7e9ee; border-color: var(--body); }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+    .card { background: var(--screen); border-radius: 14px; padding: 1rem 1.1rem; }
+    .card .label { font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+    .card .value { font: 500 1.5rem "IBM Plex Mono", monospace; margin-top: 0.3rem; }
+    .subcounts { margin: 0.7rem 0.2rem 0; font-size: 0.85rem; color: var(--muted); }
+    .filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 1.3rem 0 0.8rem; }
+    .filters button {
+      border: 1px solid var(--line); background: var(--screen); color: var(--ink);
+      font: 500 0.82rem "Space Grotesk", sans-serif; padding: 0.35rem 0.8rem;
+      border-radius: 999px; cursor: pointer;
+    }
+    .filters button[aria-pressed="true"] { background: var(--body); color: #e7e9ee; border-color: var(--body); }
+    .tablewrap { background: var(--screen); border-radius: 14px; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; min-width: 720px; }
+    th, td { text-align: left; padding: 0.6rem 0.85rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+    tbody tr:last-child td { border-bottom: 0; }
+    td.mono { font-family: "IBM Plex Mono", monospace; font-size: 0.82rem; white-space: nowrap; }
+    .pill { display: inline-block; padding: 0.15rem 0.6rem; border-radius: 999px; font-size: 0.74rem; font-weight: 700; }
+    .pill.succeeded { background: #e2f4ec; color: var(--ok); }
+    .pill.processing { background: #e6eefc; color: var(--accent); }
+    .pill.refunded { background: #fdf3e0; color: var(--warn); }
+    .pill.pending, .pill.canceled { background: #eef0f3; color: var(--muted); }
+    .pill.failed, .pill.expired { background: #fbeaea; color: var(--bad); }
+    .rowbtn {
+      border: 1px solid var(--line); background: #fff; color: var(--ink);
+      font: 500 0.75rem "Space Grotesk", sans-serif; padding: 0.3rem 0.6rem;
+      border-radius: 8px; cursor: pointer; white-space: nowrap;
+    }
+    .rowbtn:hover { border-color: var(--accent); color: var(--accent); }
+    .more { display: block; margin: 1rem auto 0; border: 1px solid var(--line); background: var(--screen);
+      font: 500 0.9rem "Space Grotesk", sans-serif; padding: 0.6rem 1.4rem; border-radius: 10px; cursor: pointer; }
+    .empty { padding: 1.4rem; color: var(--muted); }
+    .panel { background: var(--screen); border-radius: 14px; padding: 1.3rem 1.4rem; max-width: 560px; }
+    .panel h2 { font-size: 1.05rem; margin-bottom: 0.3rem; }
+    .panel p.sub { color: var(--muted); font-size: 0.88rem; margin-bottom: 1rem; }
+    .panel label { display: block; font-size: 0.8rem; color: var(--muted); margin: 0.8rem 0 0.25rem; }
+    .panel input, .panel textarea {
+      width: 100%; border: 1px solid #d7dbe2; border-radius: 10px;
+      padding: 0.6rem 0.7rem; font: 400 0.95rem "Space Grotesk", sans-serif; color: var(--ink);
+    }
+    .panel textarea { min-height: 110px; resize: vertical; }
+    .panel input:focus, .panel textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .panel .go {
+      margin-top: 1.1rem; border: 0; border-radius: 10px; background: var(--accent); color: #fff;
+      font: 700 0.95rem "Space Grotesk", sans-serif; padding: 0.7rem 1.4rem; cursor: pointer;
+    }
+    .panel .go:hover:enabled { background: var(--accent-press); }
+    .panel .go:disabled { opacity: 0.5; cursor: wait; }
+    .result { margin-top: 0.9rem; font-size: 0.88rem; }
+    .result.ok { color: var(--ok); }
+    .result.bad { color: var(--bad); }
+    .composer-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    .ghost {
+      margin-top: 1.1rem; border: 1px solid var(--line); border-radius: 10px; background: #fff;
+      color: var(--ink); font: 700 0.95rem "Space Grotesk", sans-serif; padding: 0.7rem 1.2rem; cursor: pointer;
+    }
+    .ghost:hover { border-color: var(--accent); color: var(--accent); }
+    section[hidden] { display: none; }
+    .error { margin-top: 1rem; color: var(--bad); }
+  </style>
+</head>
+<body>
+  <header>
+    <span class="brand">RETAILEVAL &middot; ADMIN</span>
+    <div class="actions">
+      <button id="refresh" type="button">Refresh</button>
+      <button id="logout" type="button">Log out</button>
+    </div>
+  </header>
+  <main>
+    <nav class="tabs" role="tablist">
+      <button type="button" data-tab="overview" aria-selected="true">Overview</button>
+      <button type="button" data-tab="invoices" aria-selected="false">New invoice</button>
+      <button type="button" data-tab="contacts" aria-selected="false">Contacts &amp; alerts</button>
+    </nav>
+
+    <section id="tab-overview">
+      <div class="cards">
+        <div class="card"><div class="label">Collected</div><div class="value" id="c-collected">—</div></div>
+        <div class="card"><div class="label">Succeeded</div><div class="value" id="c-succeeded">—</div></div>
+        <div class="card"><div class="label">Failed</div><div class="value" id="c-failed">—</div></div>
+        <div class="card"><div class="label">Canceled</div><div class="value" id="c-canceled">—</div></div>
+      </div>
+      <p class="subcounts" id="subcounts"></p>
+
+      <div class="filters" id="filters">
+        <button type="button" data-status="" aria-pressed="true">All</button>
+        <button type="button" data-status="succeeded" aria-pressed="false">Succeeded</button>
+        <button type="button" data-status="processing" aria-pressed="false">Processing</button>
+        <button type="button" data-status="pending" aria-pressed="false">Pending</button>
+        <button type="button" data-status="canceled" aria-pressed="false">Canceled</button>
+        <button type="button" data-status="failed" aria-pressed="false">Failed</button>
+        <button type="button" data-status="expired" aria-pressed="false">Expired</button>
+        <button type="button" data-status="refunded" aria-pressed="false">Refunded</button>
+      </div>
+
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr><th>Time</th><th>POS ID</th><th>Customer</th><th>Amount</th><th>Status</th><th>Note</th><th></th></tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+        <div class="empty" id="empty" hidden>No transactions yet.</div>
+      </div>
+      <button class="more" id="more" type="button" hidden>Load more</button>
+      <p class="error" id="err" hidden></p>
+    </section>
+
+    <section id="tab-invoices" hidden>
+      <div class="panel">
+        <h2>Create and email an invoice</h2>
+        <p class="sub">Adds the customer to your contacts and sends a payment request with a secure pay link. Amounts follow the terminal's limits.</p>
+        <label for="inv-name">Customer name</label>
+        <input id="inv-name" autocomplete="off" />
+        <label for="inv-email">Customer email</label>
+        <input id="inv-email" type="email" autocomplete="off" />
+        <label for="inv-amount">Amount (USD)</label>
+        <input id="inv-amount" inputmode="decimal" placeholder="0.00" autocomplete="off" />
+        <label for="inv-note">Note (optional, shows on the invoice)</label>
+        <input id="inv-note" maxlength="120" autocomplete="off" />
+        <button class="go" id="inv-send" type="button">Create &amp; send invoice</button>
+        <p class="result" id="inv-result" hidden></p>
+      </div>
+    </section>
+
+    <section id="tab-contacts" hidden>
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr><th style="width:36px"><input type="checkbox" id="sel-all" aria-label="Select all contacts" /></th>
+                <th>Name</th><th>Email</th><th>Last POS ID</th><th>Last seen</th></tr>
+          </thead>
+          <tbody id="contact-rows"></tbody>
+        </table>
+        <div class="empty" id="contacts-empty" hidden>No contacts yet — they appear when customers track a payment or receive an invoice.</div>
+      </div>
+
+      <div class="panel" style="margin-top:1.2rem;">
+        <h2>Send an alert</h2>
+        <p class="sub">A plain notice email — for example a maintenance heads-up or a payment reminder — to selected contacts or to everyone.</p>
+        <label for="al-subject">Subject</label>
+        <input id="al-subject" maxlength="120" autocomplete="off" />
+        <label for="al-message">Message</label>
+        <textarea id="al-message" maxlength="2000"></textarea>
+        <div class="composer-actions">
+          <button class="go" id="al-selected" type="button">Send to selected</button>
+          <button class="ghost" id="al-all" type="button">Send to all</button>
+        </div>
+        <p class="result" id="al-result" hidden></p>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const PAGE = 50;
+    let statusFilter = '';
+    let offset = 0;
+
+    const $ = (id) => document.getElementById(id);
+    const money = (cents, cur) =>
+      (Number(cents) / 100).toLocaleString('en-US', { style: 'currency', currency: (cur || 'usd').toUpperCase() });
+
+    function fail(msg) { $('err').textContent = msg; $('err').hidden = false; }
+    function clearFail() { $('err').hidden = true; }
+    function setResult(id, ok, msg) {
+      const el = $(id);
+      el.textContent = msg;
+      el.className = 'result ' + (ok ? 'ok' : 'bad');
+      el.hidden = false;
+    }
+
+    async function getJson(url) {
+      const r = await fetch(url, { headers: { Accept: 'application/json' } });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    }
+    async function postJson(url, body) {
+      const r = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await r.json().catch(() => ({}));
+      return { ok: r.ok, status: r.status, data };
+    }
+
+    // ---- tabs ----
+    document.querySelectorAll('nav.tabs button').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('nav.tabs button').forEach((b) => b.setAttribute('aria-selected', String(b === btn)));
+        ['overview', 'invoices', 'contacts'].forEach((t) => { $('tab-' + t).hidden = t !== btn.dataset.tab; });
+        if (btn.dataset.tab === 'contacts') loadContacts();
+      });
+    });
+
+    // ---- logout (best effort for Basic auth) ----
+    $('logout').addEventListener('click', async () => {
+      try {
+        await fetch('/admin/logout', { headers: { Authorization: 'Basic ' + btoa('logout:logout') } });
+      } catch {}
+      location.href = '/';
+    });
+
+    // ---- overview ----
+    async function loadSummary() {
+      const s = await getJson('/api/admin/summary');
+      const t = s.totals;
+      $('c-collected').textContent = money(t.collected_cents, s.currency);
+      $('c-succeeded').textContent = t.succeeded;
+      $('c-failed').textContent = t.failed;
+      $('c-canceled').textContent = t.canceled;
+      $('subcounts').textContent =
+        'Also: ' + t.processing + ' processing \u00b7 ' + t.pending + ' pending \u00b7 ' + t.refunded + ' refunded';
+    }
+
+    function txRow(tx) {
+      const tr = document.createElement('tr');
+      const tdTime = document.createElement('td');
+      tdTime.textContent = new Date(tx.created_at).toLocaleString();
+      const tdId = document.createElement('td');
+      tdId.className = 'mono';
+      tdId.textContent = tx.id;
+      const tdCust = document.createElement('td');
+      tdCust.textContent = tx.customer_name ? tx.customer_name + (tx.customer_email ? ' \u00b7 ' + tx.customer_email : '') : (tx.customer_email || '\u2014');
+      const tdAmt = document.createElement('td');
+      tdAmt.textContent = money(tx.amount_cents, tx.currency);
+      const tdSt = document.createElement('td');
+      const pill = document.createElement('span');
+      pill.className = 'pill ' + tx.status;
+      pill.textContent = tx.status;
+      tdSt.appendChild(pill);
+      const tdNote = document.createElement('td');
+      tdNote.textContent = tx.note || '\u2014';
+      const tdAct = document.createElement('td');
+      if (tx.status === 'succeeded' || tx.status === 'refunded') {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'rowbtn';
+        b.textContent = 'Email receipt';
+        b.addEventListener('click', async () => {
+          let email = tx.customer_email;
+          if (!email) email = prompt('No email on file for ' + tx.id + '. Send the receipt to:') || '';
+          if (!email.trim()) return;
+          b.disabled = true;
+          const r = await postJson('/api/admin/transactions/' + tx.id + '/receipt', { email: email.trim() });
+          b.disabled = false;
+          b.textContent = r.ok ? 'Sent \u2713' : 'Failed \u2014 retry';
+          if (r.ok) setTimeout(() => { b.textContent = 'Email receipt'; }, 2500);
+        });
+        tdAct.appendChild(b);
+      }
+      [tdTime, tdId, tdCust, tdAmt, tdSt, tdNote, tdAct].forEach((td) => tr.appendChild(td));
+      return tr;
+    }
+
+    function renderRows(list, append) {
+      const tbody = $('rows');
+      if (!append) tbody.textContent = '';
+      for (const tx of list) tbody.appendChild(txRow(tx));
+      $('empty').hidden = tbody.children.length > 0;
+    }
+
+    async function loadTransactions(append) {
+      const q = new URLSearchParams({ limit: PAGE, offset });
+      if (statusFilter) q.set('status', statusFilter);
+      const data = await getJson('/api/admin/transactions?' + q);
+      renderRows(data.transactions, append);
+      $('more').hidden = data.transactions.length < PAGE;
+    }
+
+    async function refresh() {
+      clearFail();
+      offset = 0;
+      try {
+        await Promise.all([loadSummary(), loadTransactions(false)]);
+      } catch (e) {
+        fail('Could not load data \u2014 is D1 configured and reachable? (' + e.message + ')');
+      }
+    }
+
+    $('filters').addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-status]');
+      if (!btn) return;
+      statusFilter = btn.dataset.status;
+      document.querySelectorAll('#filters button').forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
+      refresh();
+    });
+    $('more').addEventListener('click', async () => {
+      offset += PAGE;
+      try { await loadTransactions(true); } catch (e) { fail('Could not load more. (' + e.message + ')'); }
+    });
+    $('refresh').addEventListener('click', refresh);
+
+    // ---- invoices ----
+    $('inv-send').addEventListener('click', async () => {
+      const btn = $('inv-send');
+      btn.disabled = true;
+      const r = await postJson('/api/admin/invoices', {
+        name: $('inv-name').value,
+        email: $('inv-email').value,
+        amount: $('inv-amount').value,
+        note: $('inv-note').value,
+      });
+      btn.disabled = false;
+      if (!r.ok) {
+        const why = { 'name-required': 'Add the customer name.', 'valid-email-required': 'Add a valid email.', 'bad-amount': 'Amount is outside the allowed range.' }[r.data.error] || 'Could not create the invoice.';
+        return setResult('inv-result', false, why);
+      }
+      if (r.data.emailed) {
+        setResult('inv-result', true, 'Invoice ' + r.data.id + ' sent. Pay link: ' + r.data.pay_url);
+        ['inv-name', 'inv-email', 'inv-amount', 'inv-note'].forEach((id) => { $(id).value = ''; });
+      } else {
+        setResult('inv-result', false, 'Invoice ' + r.data.id + ' was created, but the email did not send (' + (r.data.mail_error || 'unknown') + '). Pay link: ' + r.data.pay_url);
+      }
+    });
+
+    // ---- contacts + alerts ----
+    async function loadContacts() {
+      try {
+        const data = await getJson('/api/admin/contacts');
+        const tbody = $('contact-rows');
+        tbody.textContent = '';
+        for (const c of data.contacts) {
+          const tr = document.createElement('tr');
+          const tdSel = document.createElement('td');
+          const cb = document.createElement('input');
+          cb.type = 'checkbox';
+          cb.value = c.email;
+          cb.setAttribute('aria-label', 'Select ' + c.email);
+          tdSel.appendChild(cb);
+          const tdName = document.createElement('td');
+          tdName.textContent = c.name || '\u2014';
+          const tdEmail = document.createElement('td');
+          tdEmail.textContent = c.email;
+          const tdPid = document.createElement('td');
+          tdPid.className = 'mono';
+          tdPid.textContent = c.last_pos_id || '\u2014';
+          const tdSeen = document.createElement('td');
+          tdSeen.textContent = new Date(c.updated_at).toLocaleString();
+          [tdSel, tdName, tdEmail, tdPid, tdSeen].forEach((td) => tr.appendChild(td));
+          tbody.appendChild(tr);
+        }
+        $('contacts-empty').hidden = tbody.children.length > 0;
+      } catch (e) {
+        $('contacts-empty').hidden = false;
+        $('contacts-empty').textContent = 'Could not load contacts. (' + e.message + ')';
+      }
+    }
+
+    $('sel-all').addEventListener('change', (e) => {
+      document.querySelectorAll('#contact-rows input[type=checkbox]').forEach((cb) => { cb.checked = e.target.checked; });
+    });
+
+    async function sendAlert(emails) {
+      const subject = $('al-subject').value.trim();
+      const message = $('al-message').value.trim();
+      if (!subject || !message) return setResult('al-result', false, 'Add a subject and a message.');
+      if (Array.isArray(emails) && !emails.length) return setResult('al-result', false, 'Select at least one contact.');
+      const r = await postJson('/api/admin/notify', { subject, message, emails });
+      if (!r.ok) {
+        const why = { 'no-recipients': 'No matching recipients.', 'mail-not-configured': 'SMTP is not configured.' }[r.data.error] || 'Sending failed.';
+        return setResult('al-result', false, why);
+      }
+      setResult('al-result', true, 'Sent to ' + r.data.sent + ' contact' + (r.data.sent === 1 ? '' : 's') + (r.data.failed.length ? ' \u00b7 failed: ' + r.data.failed.join(', ') : '') + '.');
+    }
+    $('al-selected').addEventListener('click', () =>
+      sendAlert([...document.querySelectorAll('#contact-rows input:checked')].map((cb) => cb.value))
+    );
+    $('al-all').addEventListener('click', () => sendAlert('all'));
+
+    refresh();
+  </script>
+</body>
+</html>

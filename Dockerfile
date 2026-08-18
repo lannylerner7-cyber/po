@@ -27,6 +27,6 @@ EXPOSE 4242
 # routing traffic / finishing a rolling update. Checks the app over HTTP on
 # localhost; any 200 from the terminal page means Express is up.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget -qO /dev/null "http://127.0.0.1:${PORT}/" || exit 1
+  CMD wget -qO /dev/null "http://127.0.0.1:4242/" || exit 1
 
 CMD ["node", "server.js"]
